@@ -33,7 +33,8 @@ class Ball {
 class Player { // класс Игрока
 private: float x,y;
 public:
- bool isShot = false;
+ enum { left,right,up,down,jump,stay } state;
+ bool isShot = false, onGround;
  float w, h, dx, dy, speed ; //координаты игрока х и у, высота ширина, ускорение (по х и по у), сама скорость
  int dir,playerScore;//направление (direction) движения игрока
  std::string File; //файл с расширением
@@ -43,6 +44,7 @@ public:
 
   Player(std::string F, float X, float Y, float W, float H){ //Конструктор с параметрами(формальными) для класса Player. При создании объекта класса мы будем задавать имя файла, координату Х и У, ширину и высоту
      dx=0;dy=0;
+     onGround;
      speed=0;dir=0;
      playerScore = 0;
      File = F;//имя файла+расширение
@@ -58,13 +60,32 @@ public:
 
   void update(float time) //функция "оживления" объекта класса. update - обновление. принимает в себя время SFML , вследствие чего работает бесконечно, давая персонажу движение.
      {
+        control();//функция управления персонажем
+		switch (state)//тут делаются различные действия в зависимости от состояния
+		{
+            case right: dx = speed;break;//состояние идти вправо
+            case left: dx = -speed;break;//состояние идти влево
+            case up: break;//будет состояние поднятия наверх (например по лестнице)
+            case down: dx=0;break;//будет состояние во время спуска персонажа (например по лестнице)
+            case jump: break;//здесь может быть вызов анимации
+            case stay: break;//и здесь тоже
+		}
+		x += dx*time;
+		//checkCollisionWithMap(dx, 0);//обрабатываем столкновение по Х
+		y += dy*time;
+		//checkCollisionWithMap(0, dy);//обрабатываем столкновение по Y
+		//if (!isMove) speed = 0;
+		sprite.setPosition(x+w/2, y+h/2); //задаем позицию спрайта в место его центра
+		//if (health <= 0){life = false;}
+		dy = dy + 0.0015*time;
+        /*
          switch (dir)//реализуем поведение в зависимости от направления. (каждая цифра соответствует направлению)
          {
              case 0: dx = speed; dy = 0; break;//по иксу задаем положительную скорость, по игреку зануляем. получаем, что персонаж идет только вправо
              case 1: dx = -speed; dy = 0; break;//по иксу задаем отрицательную скорость, по игреку зануляем. получается, что персонаж идет только влево
              case 2: dx = 0; dy = speed; break;//по иксу задаем нулевое значение, по игреку положительное. получается, что персонаж идет только вниз
              case 3: dx = 0; dy = -speed; break;//по иксу задаем нулевое значение, по игреку отрицательное. получается, что персонаж идет только вверх
-         }
+         }*/
 
          x += dx*time;//то движение из прошлого урока. наше ускорение на время получаем смещение координат и как следствие движение
          y += dy*time;//аналогично по игреку
@@ -85,9 +106,11 @@ public:
                         if (dy>0)//если мы шли вниз,
                         {
                             y = i * 32 - h;//то стопорим координату игрек персонажа. сначала получаем координату нашего квадратика на карте(стены) и затем вычитаем из высоты спрайта персонажа.
+                            onGround = true;
                         }
                         if (dy<0)
                         {
+                            onGround = true;
                             y = i * 32 + 32;//аналогично с ходьбой вверх. dy<0, значит мы идем вверх (вспоминаем координаты паинта)
                         }
                         /*
@@ -105,7 +128,7 @@ public:
 
                         if (dx < 0)
                         {
-
+                            onGround = true;
                             x = j * 32 + 32;//аналогично идем влево
                             y =  (i * 32) - (2 * 10);
 
@@ -115,6 +138,7 @@ public:
 
                         if (dx > 0)
                         {
+                            onGround = true;
                             x = j * 32 - w;
                             y =  (i * 32) + (2 * 10);
                         }
@@ -125,6 +149,39 @@ public:
                     TileMap[i][j] = ' ';
 				}
 			}
+	}
+
+	void control(){
+		if (Keyboard::isKeyPressed(Keyboard::Left)) {
+			state = left;
+			speed = 0.1;
+			//currentFrame += 0.005*time;
+			//if (currentFrame > 3) currentFrame -= 3;
+			//p.sprite.setTextureRect(IntRect(96 * int(currentFrame), 135, 96, 54));
+		}
+		if (Keyboard::isKeyPressed(Keyboard::Right)) {
+			state = right;
+			speed = 0.1;
+		//	currentFrame += 0.005*time;
+		//	if (currentFrame > 3) currentFrame -= 3;
+		//	p.sprite.setTextureRect(IntRect(96 * int(currentFrame), 232, 96, 54));
+		}
+
+		if ((Keyboard::isKeyPressed(Keyboard::Space)) && (onGround)) {
+			state = jump; dy = -0.5; onGround = false;//то состояние равно прыжок,прыгнули и сообщили, что мы не на земле
+			//currentFrame += 0.005*time;
+			//if (currentFrame > 3) currentFrame -= 3;
+			//p.sprite.setTextureRect(IntRect(96 * int(currentFrame), 307, 96, 96));
+		}
+
+		if (Keyboard::isKeyPressed(Keyboard::Down)) {
+			state = down;
+			speed = 0.1;
+
+			//currentFrame += 0.005*time;
+			//if (currentFrame > 3) currentFrame -= 3;
+			//p.sprite.setTextureRect(IntRect(96 * int(currentFrame), 0, 96, 96));
+		}
 	}
 
     float getplayercoordinateX(){	//этим методом будем забирать координату Х
