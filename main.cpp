@@ -78,7 +78,6 @@ public:
 				}
 
 				if (TileMap[i][j] == 's') { //если символ равен 's' (камень)
-					x = 300; y = 300;//какое то действие... например телепортация героя
                     playerScore++;//если взяли камень, переменная playerScore=playerScore+1;
                     TileMap[i][j] = ' ';
 				}
@@ -99,9 +98,21 @@ int main()
     std::string heroImg = "hero.png";
     Player p(heroImg,535,245,85,140);
 
+    bool showMissionText = true;
+
 	RenderWindow window(sf::VideoMode(800, 400), "no mercy morning");
 
     view.reset(sf::FloatRect(0, 0, 640, 480));//размер "вида" камеры при создании объекта вида камеры. (потом можем менять как хотим) Что то типа инициализации.
+
+    Image quest_image;
+	quest_image.loadFromFile("images/missionbg.jpg");
+	quest_image.createMaskFromColor(Color(0, 0, 0));
+	Texture quest_texture;
+	quest_texture.loadFromImage(quest_image);
+	Sprite s_quest;
+	s_quest.setTexture(quest_texture);
+	s_quest.setTextureRect(IntRect(0, 0, 340, 510));  //приведение типов, размеры картинки исходные
+	s_quest.setScale(0.6f, 0.6f);//чуть уменьшили картинку, => размер стал меньше
 
     Font font;//шрифт
     font.loadFromFile("CyrilicOld.TTF");//передаем нашему шрифту файл шрифта
@@ -152,6 +163,32 @@ int main()
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();
+
+             if (event.type == Event::KeyPressed)//событие нажатия клавиши
+                 if ((event.key.code == Keyboard::Tab)) {//если клавиша ТАБ
+
+
+                     switch (showMissionText) {//переключатель, реагирующий на логическую переменную showMissionText
+
+                     case true: {
+                             std::ostringstream playerHealthString;//строка здоровья игрока
+                             //playerHealthString << p.health; //заносим в строку здоровье
+                             std::ostringstream task;//строка текста миссии
+                             task << getTextMission(getCurrentMission(p.getplayercoordinateX()));//вызывается функция getTextMission (она возвращает текст миссии), которая принимает в качестве аргумента функцию getCurrentMission(возвращающую номер миссии), а уже эта ф-ция принимает в качестве аргумента функцию p.getplayercoordinateX() (эта ф-ция возвращает Икс координату игрока)
+                             //text.setString("Здоровье: " + playerHealthString.str()+"\n" + task.str());//задаем
+                             text.setString("text");
+                             /*text.setPosition(view.getCenter().x + 125, view.getCenter().y - 130);//позиция всего этого текстового блока
+                             s_quest.setPosition(view.getCenter().x + 115, view.getCenter().y - 130);//позиция фона для блока*/
+                             showMissionText = false;//эта строка позволяет убрать все что мы вывели на экране
+                             break;//выходим , чтобы не выполнить условие "false" (которое ниже)
+                             }
+                         case false: {
+                             text.setString("");//если не нажата клавиша таб, то весь этот текст пустой
+                             showMissionText = true;// а эта строка позволяет снова нажать клавишу таб и получить вывод на экран
+                             break;
+                          }
+                    }
+             }
 		}
 
         if (Keyboard::isKeyPressed(Keyboard::Left)) {
@@ -163,7 +200,7 @@ int main()
 			}
             p.sprite.move(-0.1*time, 0);
             //p.sprite.setTextureRect(IntRect(390,245,85,140));
-            p.sprite.setScale(-1, 1);
+            //p.sprite.setScale(-1, 1);
         }
 		if (Keyboard::isKeyPressed(Keyboard::Right)) {
             p.dir = 0; p.speed = 0.1;
@@ -203,11 +240,15 @@ int main()
             }
         }
 
-        std::ostringstream playerScoreString;
+        /*std::ostringstream playerScoreString;
         playerScoreString << p.playerScore;
 		text.setString("Rocks:" + playerScoreString.str());
-		text.setPosition(view.getCenter().x , view.getCenter().y );//задаем позицию текста, центр камеры
-
+		text.setPosition(view.getCenter().x , view.getCenter().y );//задаем позицию текста, центр камеры*/
+        if (!showMissionText) {
+			text.setPosition(view.getCenter().x + 125, view.getCenter().y - 130);//позиция всего этого текстового блока
+			s_quest.setPosition(view.getCenter().x + 115, view.getCenter().y - 130);//позиция фона для блока
+			window.draw(s_quest); window.draw(text); //рисуем спрайт свитка (фон для текста миссии). а затем и текст. все это завязано на логическую переменную, которая меняет свое состояние от нажатия клавиши ТАБ
+		}
 		window.draw(p.sprite);//рисуем спрайт объекта p класса player
 		window.draw(text);//рисую этот текст
 		window.display();
