@@ -8,20 +8,25 @@
 using namespace sf;
 
 class Player { // класс Игрока
+private: float x,y;
 public:
- float x, y, w, h, dx, dy, speed ; //координаты игрока х и у, высота ширина, ускорение (по х и по у), сама скорость
- int dir ; //направление (direction) движения игрока
+ float w, h, dx, dy, speed ; //координаты игрока х и у, высота ширина, ускорение (по х и по у), сама скорость
+ int dir,playerScore;//направление (direction) движения игрока
  std::string File; //файл с расширением
  Image image;//сфмл изображение
  Texture texture;//сфмл текстура
  Sprite sprite;//сфмл спрайт
 
   Player(std::string F, float X, float Y, float W, float H){ //Конструктор с параметрами(формальными) для класса Player. При создании объекта класса мы будем задавать имя файла, координату Х и У, ширину и высоту
-     dx=0;dy=0;speed=0;dir=0;
+     dx=0;dy=0;
+     speed=0;dir=0;
+     playerScore = 0;
      File = F;//имя файла+расширение
      w = W; h = H;//высота и ширина
      x = X; y = Y;//координата появления спрайта
      image.loadFromFile("images/" + File);//запихиваем в image наше изображение вместо File мы передадим то, что пропишем при создании объекта. В нашем случае "hero.png" и получится запись идентичная image.loadFromFile("images/hero/png");
+     /*image.createMaskFromColor(Color(230, 230, 230));
+     image.createMaskFromColor(Color(255, 255, 255));*/
      texture.loadFromImage(image);//закидываем наше изображение в текстуру
      sprite.setTexture(texture);//заливаем спрайт текстурой
      sprite.setTextureRect(IntRect(x, y, w, h)); //Задаем спрайту один прямоугольник для вывода одного льва, а не кучи львов сразу. IntRect - приведение типов
@@ -41,8 +46,52 @@ public:
          y += dy*time;//аналогично по игреку
 
          speed = 0;//зануляем скорость, чтобы персонаж остановился.
+         interactionWithMap();
          sprite.setPosition(x,y); //выводим спрайт в позицию x y , посередине. бесконечно выводим в этой функции, иначе бы наш спрайт стоял на месте.
     }
+
+    void interactionWithMap()//ф-ция взаимодействия с картой
+	{
+
+			for (int i = y / 32; i < (y + h) / 32; i++)//проходимся по тайликам, контактирующим с игроком, то есть по всем квадратикам размера 32*32, которые мы окрашивали в 9 уроке. про условия читайте ниже.
+			for (int j = x / 32; j<(x + w) / 32; j++)//икс делим на 32, тем самым получаем левый квадратик, с которым персонаж соприкасается. (он ведь больше размера 32*32, поэтому может одновременно стоять на нескольких квадратах). А j<(x + w) / 32 - условие ограничения координат по иксу. то есть координата самого правого квадрата, который соприкасается с персонажем. таким образом идем в цикле слева направо по иксу, проходя по от левого квадрата (соприкасающегося с героем), до правого квадрата (соприкасающегося с героем)
+			{
+
+				if (TileMap[i][j] == '0')//если наш квадратик соответствует символу 0 (стена), то проверяем "направление скорости" персонажа:
+				{
+					if (dy>0)//если мы шли вниз,
+					{
+						y = i * 32 - h;//то стопорим координату игрек персонажа. сначала получаем координату нашего квадратика на карте(стены) и затем вычитаем из высоты спрайта персонажа.
+					}
+					if (dy<0)
+					{
+						y = i * 32 + 32;//аналогично с ходьбой вверх. dy<0, значит мы идем вверх (вспоминаем координаты паинта)
+					}
+					if (dx>0)
+					{
+						x = j * 32 - w;//если идем вправо, то координата Х равна стена (символ 0) минус ширина персонажа
+					}
+					if (dx < 0)
+					{
+						x = j * 32 + 32;//аналогично идем влево
+					}
+				}
+
+				if (TileMap[i][j] == 's') { //если символ равен 's' (камень)
+					x = 300; y = 300;//какое то действие... например телепортация героя
+                    playerScore++;//если взяли камень, переменная playerScore=playerScore+1;
+                    TileMap[i][j] = ' ';
+				}
+			}
+	}
+
+    float getplayercoordinateX(){	//этим методом будем забирать координату Х
+		return x;
+	}
+
+	float getplayercoordinateY(){	//этим методом будем забирать координату Y
+		return y;
+	}
 };
 
 int main()
@@ -51,6 +100,14 @@ int main()
     Player p(heroImg,535,245,85,140);
 
 	RenderWindow window(sf::VideoMode(800, 400), "no mercy morning");
+
+    view.reset(sf::FloatRect(0, 0, 640, 480));//размер "вида" камеры при создании объекта вида камеры. (потом можем менять как хотим) Что то типа инициализации.
+
+    Font font;//шрифт
+    font.loadFromFile("CyrilicOld.TTF");//передаем нашему шрифту файл шрифта
+    Text text("", font, 20);//создаем объект текст. закидываем в объект текст строку, шрифт, размер шрифта(в пикселях);//сам объект текст (не строка)
+    text.setColor(Color::Red);//покрасили текст в красный. если убрать эту строку, то по умолчанию он белый
+    text.setStyle(sf::Text::Bold | sf::Text::Underlined);
 
     Image map_image;
 	map_image.loadFromFile("images/map.png");
@@ -66,11 +123,11 @@ int main()
 
     float CurrentFrame=0;
 
-	heroimage.loadFromFile("images/hero.png");//загружаем в него файл
+	/*heroimage.loadFromFile("images/hero.png");//загружаем в него файл
     heroimage.createMaskFromColor(Color(254, 254, 254));
 	herotexture.loadFromImage(heroimage);
 	herosprite.setTexture(herotexture);
-	herosprite.setTextureRect(IntRect(535,245,85,140));//стоя
+	herosprite.setTextureRect(IntRect(535,245,85,140));//стоя*/
 
 	//290px
 
@@ -101,11 +158,11 @@ int main()
             p.dir = 1; p.speed = 0.1;
             CurrentFrame += 0.005*time;
 			if (CurrentFrame > 3) {
-                p.sprite.setTextureRect(IntRect(245,245,85,140));
+              //  p.sprite.setTextureRect(IntRect(245,245,85,140));
                 CurrentFrame -= 3;
 			}
             p.sprite.move(-0.1*time, 0);
-            p.sprite.setTextureRect(IntRect(390,245,85,140));
+            //p.sprite.setTextureRect(IntRect(390,245,85,140));
             p.sprite.setScale(-1, 1);
         }
 		if (Keyboard::isKeyPressed(Keyboard::Right)) {
@@ -113,14 +170,13 @@ int main()
             CurrentFrame += 0.005*time;
 			if (CurrentFrame > 3) CurrentFrame -= 3;
 		    p.sprite.move(0.1*time, 0);
-            p.sprite.setTextureRect(IntRect(390,245,85,140));
+            //p.sprite.setTextureRect(IntRect(390,245,85,140));
         }
 		if (Keyboard::isKeyPressed(Keyboard::Up)) {
 		    p.dir = 3; p.speed = 0.1;
 		    CurrentFrame += 0.005*time;
 			if (CurrentFrame > 3) CurrentFrame -= 3;
             p.sprite.move(0, -0.1*time);
-            std::cout << 1;
         }
 		if (Keyboard::isKeyPressed(Keyboard::Down)) {
 		    p.dir = 2; p.speed = 0.1;
@@ -129,7 +185,9 @@ int main()
             p.sprite.move(0, 0.1*time);
         }
 
-        //p.update(time);//оживляем объект p класса Player с помощью времени sfml, передавая время в качестве параметра функции update. благодаря этому персонаж может двигаться
+        window.setView(view);
+        setplayercoordinateforview(p.getplayercoordinateX(), p.getplayercoordinateY());
+        p.update(time);//оживляем объект p класса Player с помощью времени sfml, передавая время в качестве параметра функции update. благодаря этому персонаж может двигаться
 		window.clear();
 		for (int i = 0; i < HEIGHT_MAP; i++) {
 		for (int j = 0; j < WIDTH_MAP; j++)
@@ -145,7 +203,13 @@ int main()
             }
         }
 
+        std::ostringstream playerScoreString;
+        playerScoreString << p.playerScore;
+		text.setString("Rocks:" + playerScoreString.str());
+		text.setPosition(view.getCenter().x , view.getCenter().y );//задаем позицию текста, центр камеры
+
 		window.draw(p.sprite);//рисуем спрайт объекта p класса player
+		window.draw(text);//рисую этот текст
 		window.display();
 	}
 
