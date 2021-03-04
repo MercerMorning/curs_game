@@ -7,9 +7,33 @@
 #include <sstream>
 using namespace sf;
 
+class Ball {
+    private: float x, y, w, h;
+    public:
+        std::string File;
+         Image image;//сфмл изображение
+         Texture texture;//сфмл текстура
+         Sprite sprite;//сфмл спрайт
+    Ball(std::string F, float X, float Y, float W, float H){
+        File = F;
+        w = W; h = H;//высота и ширина
+         x = X; y = Y;//координата появления спрайта
+         image.loadFromFile("images/" + File);//запихиваем в image наше изображение вместо File мы передадим то, что пропишем при создании объекта. В нашем случае "hero.png" и получится запись идентичная image.loadFromFile("images/hero/png");
+         /*image.createMaskFromColor(Color(230, 230, 230));
+         image.createMaskFromColor(Color(255, 255, 255));*/
+         texture.loadFromImage(image);//закидываем наше изображение в текстуру
+         sprite.setTexture(texture);//заливаем спрайт текстурой
+         sprite.setTextureRect(IntRect(x, y, w, h)); //Задаем спрайту один прямоугольник для вывода одного льва, а не кучи львов сразу. IntRect - приведение типов
+    }
+    void setpos (float Xpos, float Ypos){
+        sprite.setPosition(Xpos, Ypos);
+    }
+};
+
 class Player { // класс Игрока
 private: float x,y;
 public:
+ bool isShot = false;
  float w, h, dx, dy, speed ; //координаты игрока х и у, высота ширина, ускорение (по х и по у), сама скорость
  int dir,playerScore;//направление (direction) движения игрока
  std::string File; //файл с расширением
@@ -116,6 +140,7 @@ int main()
 {
     std::string heroImg = "hero.png";
     Player p(heroImg,535,245,85,140);
+    Ball b(heroImg,535,245,85,140);
 
     bool showMissionText = true;
 
@@ -178,12 +203,41 @@ int main()
         clock.restart(); //перезагружает время
         time = time/800; //скорость игры
 
+        Vector2i pixelPos = Mouse::getPosition(window);//забираем коорд курсора
+		Vector2f pos = window.mapPixelToCoords(pixelPos);//переводим их в игровые (уходим от коорд окна)
+
+
+
+
+        /*if (p.isShot)
+			if (event.type == Event::MouseButtonPressed)//если нажата клавиша мыши
+			if (event.key.code == Mouse::Right){//а именно правая
+				p.isMove = true;//то начинаем движение
+				p.isSelect = false;//объект уже не выбран
+				p.sprite.setColor(Color::White);//возвращаем обычный цвет спрайту
+				tempX = pos.x;//забираем координату нажатия курсора Х
+				tempY = pos.y;//и Y
+
+			}*/
+
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();
 
              if (event.type == Event::KeyPressed)//событие нажатия клавиши
+
+               if (event.key.code == Keyboard::Q){//а именно левая
+                    //if (p.sprite.getGlobalBounds().contains(pos.x, pos.y))//и при этом координата курсора попадает в спрайт
+                    //{
+                        //std::cout << '1';
+                        b.setpos(p.getplayercoordinateX(), p.getplayercoordinateY());
+                        b.sprite.setColor(Color::Red);//красим спрайт в зеленый,тем самым говоря игроку,что он выбрал персонажа и может сделать ход
+                        //p.isShot = true;
+                    //}
+                }
+
+
                  if ((event.key.code == Keyboard::Tab)) {//если клавиша ТАБ
 
 
@@ -268,8 +322,10 @@ int main()
 			s_quest.setPosition(view.getCenter().x + 115, view.getCenter().y - 130);//позиция фона для блока
 			window.draw(s_quest); window.draw(text); //рисуем спрайт свитка (фон для текста миссии). а затем и текст. все это завязано на логическую переменную, которая меняет свое состояние от нажатия клавиши ТАБ
 		}
+
 		window.draw(p.sprite);//рисуем спрайт объекта p класса player
 		window.draw(text);//рисую этот текст
+		 window.draw(b.sprite);
 		window.display();
 	}
 
