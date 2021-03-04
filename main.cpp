@@ -7,6 +7,102 @@
 #include <sstream>
 using namespace sf;
 
+class Entity {
+public:
+	float dx, dy, x, y, speed,moveTimer;//добавили переменную таймер для будущих целей
+	int w,h,health;
+	bool life, isMove, onGround;
+	 Image image;
+	Texture texture;
+	Sprite sprite;
+	std::string name;//враги могут быть разные, мы не будем делать другой класс для врага.всего лишь различим врагов по имени и дадим каждому свое действие в update в зависимости от имени
+	Entity(std::string File, float X, float Y,int W,int H, std::string Name){
+		x = X; y = Y; w = W; h = H; name = Name; moveTimer = 0;
+		speed = 0; health = 100; dx = 0; dy = 0;
+		life = true; onGround = false; isMove = false;
+		image.loadFromFile("images/" + File);
+		texture.loadFromImage(image);
+		sprite.setTexture(texture);
+		sprite.setTextureRect(IntRect(x, y, w, h));
+		//sprite.setOrigin(w / 2, h / 2);
+	}
+
+	void interactionWithMap()//ф-ция взаимодействия с картой
+	{
+
+			for (int i = y / 32; i < (y + h) / 32; i++)//проходимся по тайликам, контактирующим с игроком, то есть по всем квадратикам размера 32*32, которые мы окрашивали в 9 уроке. про условия читайте ниже.
+                for (int j = x / 32; j < (x + w) / 32; j++)//икс делим на 32, тем самым получаем левый квадратик, с которым персонаж соприкасается. (он ведь больше размера 32*32, поэтому может одновременно стоять на нескольких квадратах). А j<(x + w) / 32 - условие ограничения координат по иксу. то есть координата самого правого квадрата, который соприкасается с персонажем. таким образом идем в цикле слева направо по иксу, проходя по от левого квадрата (соприкасающегося с героем), до правого квадрата (соприкасающегося с героем)
+                {
+                    if (TileMap[i][j] == '0' || TileMap[i][j] == '1')//если наш квадратик соответствует символу 0 (стена), то проверяем "направление скорости" персонажа:
+                    {
+                        if (dy>0)//если мы шли вниз,
+                        {
+                            y = i * 32 - h;//то стопорим координату игрек персонажа. сначала получаем координату нашего квадратика на карте(стены) и затем вычитаем из высоты спрайта персонажа.
+                            onGround = true;
+                        }
+                        if (dy<0)
+                        {
+                            onGround = true;
+                            y = i * 32 + 32;//аналогично с ходьбой вверх. dy<0, значит мы идем вверх (вспоминаем координаты паинта)
+                        }
+                        /*
+                        if (dx>0)
+                        {
+                            x = j * 32 - w;//если идем вправо, то координата Х равна стена (символ 0) минус ширина персонажа
+                        }
+                        if (dx < 0)
+                        {
+                            x = j * 32 + 32;//аналогично идем влево
+                            y =  i * 6 * 32;
+                        }*/
+                    }
+                    if (TileMap[i][j] == 't') {
+
+                        if (dx < 0)
+                        {
+                            onGround = true;
+                            x = j * 32 + 32;//аналогично идем влево
+                            y =  (i * 32) - (2 * 10);
+
+                        }
+                    }
+                    if (TileMap[i][j] == 'p') {
+
+                        if (dx > 0)
+                        {
+                            onGround = true;
+                            x = j * 32 - w;
+                            y =  (i * 32) + (2 * 10);
+                        }
+                    }
+
+
+			}
+	}
+
+};
+
+class Enemy :public Entity{
+      /*Enemy(std::string F, float X, float Y, float W, float H, std::string Name):Entity(F,X,Y,W,H,Name){ //Конструктор с параметрами(формальными) для класса Player. При создании объекта класса мы будем задавать имя файла, координату Х и У, ширину и высоту
+
+      }*/
+      Enemy(std::string F, float X, float Y, float W, float H, std::string Name):Entity(F,X,Y,W,H,Name){ //Конструктор с параметрами(формальными) для класса Player. При создании объекта класса мы будем задавать имя файла, координату Х и У, ширину и высоту
+
+  }
+    void update(float time)
+	{
+		if (name == "EasyEnemy"){//для персонажа с таким именем логика будет такой
+
+			//moveTimer += time;if (moveTimer>3000){ dx *= -1; moveTimer = 0; }//меняет направление примерно каждые 3 сек
+			//checkCollisionWithMap(dx, 0);//обрабатываем столкновение по Х
+			x += dx*time;
+			interactionWithMap();
+						//sprite.setPosition(x + w / 2, y + h / 2); //задаем позицию спрайта в место его центра
+			//if (health <= 0){ life = false; }
+		}
+	}
+};
+
 class Ball {
     private: float x, y, w, h;
     public:
@@ -23,39 +119,30 @@ class Ball {
          image.createMaskFromColor(Color(255, 255, 255));*/
          texture.loadFromImage(image);//закидываем наше изображение в текстуру
          sprite.setTexture(texture);//заливаем спрайт текстурой
-         sprite.setTextureRect(IntRect(x, y, w, h)); //Задаем спрайту один прямоугольник для вывода одного льва, а не кучи львов сразу. IntRect - приведение типов
+        sprite.setTextureRect(IntRect(x, y, w, h)); //Задаем спрайту один прямоугольник для вывода одного льва, а не кучи львов сразу. IntRect - приведение типов
     }
     void setpos (float Xpos, float Ypos){
         sprite.setPosition(Xpos, Ypos);
     }
 };
 
-class Player { // класс Игрока
+class Player :public Entity { // класс Игрока
 private: float x,y;
 public:
  enum { left,right,up,down,jump,stay } state;
- bool isShot = false, onGround;
- float w, h, dx, dy, speed ; //координаты игрока х и у, высота ширина, ускорение (по х и по у), сама скорость
+ /*bool isShot = false, onGround;
+ float w, h, dx, dy, speed ; //координаты игрока х и у, высота ширина, ускорение (по х и по у), сама скорость*/
  int dir,playerScore;//направление (direction) движения игрока
- std::string File; //файл с расширением
+ /*std::string File; //файл с расширением
  Image image;//сфмл изображение
  Texture texture;//сфмл текстура
- Sprite sprite;//сфмл спрайт
+ Sprite sprite;//сфмл спрайт*/
 
-  Player(std::string F, float X, float Y, float W, float H){ //Конструктор с параметрами(формальными) для класса Player. При создании объекта класса мы будем задавать имя файла, координату Х и У, ширину и высоту
-     dx=0;dy=0;
-     onGround;
-     speed=0;dir=0;
-     playerScore = 0;
-     File = F;//имя файла+расширение
-     w = W; h = H;//высота и ширина
-     x = X; y = Y;//координата появления спрайта
-     image.loadFromFile("images/" + File);//запихиваем в image наше изображение вместо File мы передадим то, что пропишем при создании объекта. В нашем случае "hero.png" и получится запись идентичная image.loadFromFile("images/hero/png");
-     /*image.createMaskFromColor(Color(230, 230, 230));
-     image.createMaskFromColor(Color(255, 255, 255));*/
-     texture.loadFromImage(image);//закидываем наше изображение в текстуру
-     sprite.setTexture(texture);//заливаем спрайт текстурой
-     sprite.setTextureRect(IntRect(x, y, w, h)); //Задаем спрайту один прямоугольник для вывода одного льва, а не кучи львов сразу. IntRect - приведение типов
+  Player(std::string F, float X, float Y, float W, float H, std::string Name):Entity(F,X,Y,W,H,Name){ //Конструктор с параметрами(формальными) для класса Player. При создании объекта класса мы будем задавать имя файла, координату Х и У, ширину и высоту
+      playerScore = 0; state = stay;
+		   if (name == "Player1"){
+			   //sprite.setTextureRect(IntRect(4, 19, w, h));
+		   }
   }
 
   void update(float time) //функция "оживления" объекта класса. update - обновление. принимает в себя время SFML , вследствие чего работает бесконечно, давая персонажу движение.
@@ -196,7 +283,13 @@ public:
 int main()
 {
     std::string heroImg = "hero.png";
-    Player p(heroImg,535,245,85,140);
+    std::string heroName = "Player1";
+    std::string enemyImg = "enemy.png";
+    std::string enemyName = "EasyEnemy";;
+
+
+    //Enemy easyEnemy(enemyImg, 850, 671,200,97,enemyName);//простой враг, объект класса врага
+    Player p(heroImg,535,245,85,140, heroName);
     Ball b(heroImg,535,245,85,140);
 
     bool showMissionText = true;

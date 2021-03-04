@@ -2,7 +2,7 @@
 const int HEIGHT_MAP = 25;//размер карты высота
 const int WIDTH_MAP = 40;//размер карты ширина
 
-sf::String TileMap[HEIGHT_MAP] = {
+/*sf::String TileMap[HEIGHT_MAP] = {
 	"0000000000000000000000000000000000000000",
 	"0                                      0",
 	"0                                      0",
@@ -28,8 +28,8 @@ sf::String TileMap[HEIGHT_MAP] = {
 	"0           000000000000               0",
 	"t   f    h  000000000000               0",
 	"0000000000000000000000000000000000000000",
-};
-/*
+};*/
+
 sf::String TileMap[HEIGHT_MAP] = {
 
 	"t                                      p",
@@ -53,7 +53,7 @@ sf::String TileMap[HEIGHT_MAP] = {
 	"t                                      p",
 	"t                                      p",
 
-};*/
+};
 
 void randomMapGenerate(){//рандомно расставляем камни
 
